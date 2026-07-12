@@ -7,6 +7,7 @@ const morgan = require("morgan");
 
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
+const walletRoutes = require("./routes/walletRoutes");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/wallet", walletRoutes);
 
 const PORT = process.env.PORT || 5001;
 
