@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const userRoutes = require("./routes/userRoutes");
+const miningRoutes = require("./routes/miningRoutes");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/mining", miningRoutes);
 
 const PORT = process.env.PORT || 5001;
 
