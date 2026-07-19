@@ -57,14 +57,58 @@ const getAccount = async (req, res) => {
   }
 };
 
+const validateExchangeAmount = (amount) => {
+  if (amount === undefined || amount === null || amount === "") {
+    return "Amount is required.";
+  }
+
+  if (typeof amount === "string" && amount.trim() === "") {
+    return "Amount is required.";
+  }
+
+  const amountNumber = Number(amount);
+
+  if (Number.isNaN(amountNumber) || !Number.isFinite(amountNumber)) {
+    return "Invalid amount.";
+  }
+
+  if (amountNumber <= 0) {
+    return "Amount must be greater than zero.";
+  }
+
+  const amountString = String(amount).trim().toLowerCase();
+
+  if (amountString.includes("e")) {
+    return "Invalid amount.";
+  }
+
+  const decimalPart = amountString.split(".")[1];
+
+  if (decimalPart && decimalPart.length > 18) {
+    return "Invalid amount.";
+  }
+
+  return null;
+};
+
 const exchangeReward = async (req, res) => {
   try {
-    const exchange = await exchangeRewardService(req.user);
+    const { amount } = req.body;
+    const validationError = validateExchangeAmount(amount);
+
+    if (validationError) {
+      return res.status(400).json({
+        success: false,
+        message: validationError,
+      });
+    }
+
+    const data = await exchangeRewardService(req.user, Number(amount));
 
     return res.status(200).json({
       success: true,
       message: "Reward exchanged successfully.",
-      exchange,
+      data,
     });
   } catch (error) {
     console.error("Exchange reward error:", error.message);
