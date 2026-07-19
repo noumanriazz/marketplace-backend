@@ -18,14 +18,6 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Chain ID is required"],
     },
-    exchangeable: {
-      type: Number,
-      default: 0,
-    },
-    withdrawable: {
-      type: Number,
-      default: 0,
-    },
     lastRewardTime: {
       type: Date,
       default: null,

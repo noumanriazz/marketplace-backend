@@ -8,10 +8,12 @@ const morgan = require("morgan");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const accountRoutes = require("./routes/account");
+const { startRewardCron } = require("./cron/rewardCron");
 
 const app = express();
 
 connectDB();
+startRewardCron();
 
 app.use(cors());
 app.use(helmet());

@@ -4,12 +4,15 @@ const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
 
+const MIN_BALANCE_SKIP_MESSAGE =
+  "Reward skipped because minimum balance requirement is not met.";
+
 /**
  * Generates a mining reward for a user and stores it in the Reward ledger.
- * Pure orchestration — cron and future modules should call this entry point.
+ * Always uses the user's current LIVE Ethereum wallet balance.
  *
- * @param {object} user - Authenticated user document
- * @returns {Promise<{success: boolean, reward?: object, message?: string}>}
+ * @param {object} user - User document
+ * @returns {Promise<{success: boolean, skipped?: boolean, reward?: object, message?: string}>}
  */
 const generateReward = async (user) => {
   try {
@@ -34,6 +37,20 @@ const generateReward = async (user) => {
       };
     }
 
+    const miningStatus = getMiningStatus(walletBalanceEth);
+
+    if (miningStatus === "stopped") {
+      console.log(
+        `⚠️  ${MIN_BALANCE_SKIP_MESSAGE} Wallet: ${walletAddress}, Balance: ${walletBalanceEth}`
+      );
+
+      return {
+        success: false,
+        skipped: true,
+        message: MIN_BALANCE_SKIP_MESSAGE,
+      };
+    }
+
     let ethPrice;
     try {
       ethPrice = await getEthPrice();
@@ -43,15 +60,6 @@ const generateReward = async (user) => {
         success: false,
         message: "Failed to fetch current ETH price.",
         error: error.message,
-      };
-    }
-
-    const miningStatus = getMiningStatus(walletBalanceEth);
-
-    if (miningStatus === "stopped") {
-      return {
-        success: false,
-        message: "Mining is not active.",
       };
     }
 
@@ -70,6 +78,7 @@ const generateReward = async (user) => {
     if (!rewardResult || rewardResult.sixHourRewardEth <= 0) {
       return {
         success: false,
+        skipped: true,
         message: "No reward available for the current wallet balance.",
       };
     }

@@ -15,12 +15,14 @@ const login = async (req, res) => {
     const normalizedAddress = walletAddress.toLowerCase().trim();
 
     let user = await User.findOne({ walletAddress: normalizedAddress });
+    let isNewUser = false;
 
     if (user) {
       user.walletType = walletType;
       user.chainId = chainId;
       await user.save();
     } else {
+      isNewUser = true;
       user = await User.create({
         walletAddress: normalizedAddress,
         walletType,
@@ -32,9 +34,19 @@ const login = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Login successful",
+      message: isNewUser
+        ? "Wallet connected successfully."
+        : "Login successful.",
       token,
-      user,
+      user: {
+        id: user._id,
+        walletAddress: user.walletAddress,
+        walletType: user.walletType,
+        chainId: user.chainId,
+        lastRewardTime: user.lastRewardTime ?? null,
+        lastLogin: user.lastLogin,
+        createdAt: user.createdAt,
+      },
     });
   } catch (error) {
     console.error("Login error:", error.message);
