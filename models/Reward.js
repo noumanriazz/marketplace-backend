@@ -39,8 +39,8 @@ const rewardSchema = new mongoose.Schema(
     },
     rewardType: {
       type: String,
-      enum: ["MINING", "REFERRAL", "BONUS"],
-      default: "MINING",
+      enum: ["mining", "referral", "MINING", "REFERRAL", "BONUS"],
+      default: "mining",
     },
     status: {
       type: String,

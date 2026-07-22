@@ -18,6 +18,18 @@ const userSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Chain ID is required"],
     },
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     lastRewardTime: {
       type: Date,
       default: null,

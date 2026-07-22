@@ -4,6 +4,10 @@ const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
 const { getRewardSummary } = require("./rewardSummary");
+const {
+  ensureReferralCode,
+  buildReferralLink,
+} = require("../utils/referral");
 
 /**
  * Builds the Account page summary.
@@ -19,13 +23,15 @@ const getAccountSummary = async (user) => {
     throw error;
   }
 
-  const dbUser = await User.findById(user._id);
+  let dbUser = await User.findById(user._id);
 
   if (!dbUser) {
     const error = new Error("User not found.");
     error.statusCode = 404;
     throw error;
   }
+
+  dbUser = await ensureReferralCode(dbUser);
 
   const walletAddress = dbUser.walletAddress;
   const walletBalanceRaw = await getEthBalance(walletAddress);
@@ -40,6 +46,9 @@ const getAccountSummary = async (user) => {
     exchangeable: rewardSummary.exchangeable,
     withdrawable: rewardSummary.withdrawable,
     totalRewards: rewardSummary.totalRewards,
+    shareDividend: rewardSummary.shareDividend,
+    referralCode: dbUser.referralCode,
+    referralLink: buildReferralLink(dbUser.referralCode),
     walletBalance: Number.isNaN(walletBalance) ? 0 : walletBalance,
     symbol: "ETH",
     ethPrice,

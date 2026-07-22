@@ -13,4 +13,5 @@ module.exports = {
     { min: 50000, max: 100000, percentage: 2.0 },
   ],
   intervalsPerDay: 4,
+  REFERRAL_PERCENTAGE: 10,
 };

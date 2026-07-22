@@ -1,18 +1,67 @@
 const Reward = require("../models/Reward");
+const User = require("../models/User");
 const { getEthBalance } = require("./blockchain");
 const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
+const { REFERRAL_PERCENTAGE } = require("../config/reward");
 
 const MIN_BALANCE_SKIP_MESSAGE =
   "Reward skipped because minimum balance requirement is not met.";
 
+const isReferralType = (rewardType) =>
+  rewardType === "referral" || rewardType === "REFERRAL";
+
+/**
+ * Creates a referral reward for the referrer when a referred user earns mining rewards.
+ *
+ * @param {object} minerUser
+ * @param {object} miningReward
+ * @param {number} ethPrice
+ * @returns {Promise<object|null>}
+ */
+const createReferralReward = async (minerUser, miningReward, ethPrice) => {
+  if (!minerUser?.referredBy) {
+    return null;
+  }
+
+  const referrer = await User.findById(minerUser.referredBy);
+
+  if (!referrer) {
+    return null;
+  }
+
+  const referralEth =
+    (Number(miningReward.rewardEth) || 0) * (REFERRAL_PERCENTAGE / 100);
+  const referralUsd =
+    (Number(miningReward.rewardUsd) || 0) * (REFERRAL_PERCENTAGE / 100);
+
+  if (referralEth <= 0) {
+    return null;
+  }
+
+  return Reward.create({
+    userId: referrer._id,
+    walletAddress: referrer.walletAddress,
+    walletBalanceEth: miningReward.walletBalanceEth,
+    walletBalanceUsd: miningReward.walletBalanceUsd,
+    ethPrice,
+    rewardPercentage: REFERRAL_PERCENTAGE,
+    rewardEth: referralEth,
+    rewardUsd: referralUsd,
+    rewardType: "referral",
+    status: "PENDING",
+    generatedAt: new Date(),
+  });
+};
+
 /**
  * Generates a mining reward for a user and stores it in the Reward ledger.
+ * If the user was referred, also credits the referrer with a referral reward.
  * Always uses the user's current LIVE Ethereum wallet balance.
  *
  * @param {object} user - User document
- * @returns {Promise<{success: boolean, skipped?: boolean, reward?: object, message?: string}>}
+ * @returns {Promise<{success: boolean, skipped?: boolean, reward?: object, referralReward?: object, message?: string}>}
  */
 const generateReward = async (user) => {
   try {
@@ -93,14 +142,37 @@ const generateReward = async (user) => {
         rewardPercentage: rewardResult.rewardPercentage,
         rewardUsd: rewardResult.sixHourRewardUsd,
         rewardEth: rewardResult.sixHourRewardEth,
-        rewardType: "MINING",
+        rewardType: "mining",
         status: "PENDING",
         generatedAt: new Date(),
       });
 
+      let referralReward = null;
+
+      try {
+        const minerUser = await User.findById(user._id).select("referredBy");
+        referralReward = await createReferralReward(
+          minerUser,
+          reward,
+          ethPrice
+        );
+
+        if (referralReward) {
+          console.log(
+            `✅ Referral reward created for referrer of ${walletAddress}`
+          );
+        }
+      } catch (referralError) {
+        console.error(
+          "Referral reward creation error:",
+          referralError.message
+        );
+      }
+
       return {
         success: true,
         reward,
+        referralReward,
       };
     } catch (error) {
       console.error("Reward generator save error:", error.message);
@@ -122,4 +194,6 @@ const generateReward = async (user) => {
 
 module.exports = {
   generateReward,
+  createReferralReward,
+  isReferralType,
 };

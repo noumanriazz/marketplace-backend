@@ -91,7 +91,7 @@ const exchangeReward = async (user, amount) => {
         rewardPercentage: reward.rewardPercentage,
         rewardEth: exchangedEth,
         rewardUsd: convertEthToUsd(exchangedEth, ethPrice),
-        rewardType: reward.rewardType || "MINING",
+        rewardType: reward.rewardType || "mining",
         status: "EXCHANGED",
         generatedAt: reward.generatedAt || new Date(),
       });

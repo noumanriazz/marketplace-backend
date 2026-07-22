@@ -1,9 +1,13 @@
 const User = require("../models/User");
 const { generateToken } = require("../utils/jwt");
+const {
+  generateUniqueReferralCode,
+  ensureReferralCode,
+} = require("../utils/referral");
 
 const login = async (req, res) => {
   try {
-    const { walletAddress, walletType, chainId } = req.body;
+    const { walletAddress, walletType, chainId, referralCode } = req.body;
 
     if (!walletAddress || !walletType || chainId === undefined || chainId === null) {
       return res.status(400).json({
@@ -21,12 +25,35 @@ const login = async (req, res) => {
       user.walletType = walletType;
       user.chainId = chainId;
       await user.save();
+      user = await ensureReferralCode(user);
     } else {
       isNewUser = true;
+
+      let referredBy = null;
+
+      if (referralCode && typeof referralCode === "string") {
+        const normalizedReferralCode = referralCode.trim().toUpperCase();
+
+        if (normalizedReferralCode) {
+          const referrer = await User.findOne({
+            referralCode: normalizedReferralCode,
+          });
+
+          if (
+            referrer &&
+            referrer.walletAddress !== normalizedAddress
+          ) {
+            referredBy = referrer._id;
+          }
+        }
+      }
+
       user = await User.create({
         walletAddress: normalizedAddress,
         walletType,
         chainId,
+        referralCode: await generateUniqueReferralCode(),
+        referredBy,
       });
     }
 
