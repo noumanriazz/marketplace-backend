@@ -125,6 +125,41 @@ const exchangeReward = async (user, amount) => {
   };
 };
 
+const formatEth = (amount) => `${Number(amount) || 0} ETH`;
+const formatUsdt = (amount) => `${Number(amount) || 0} USDT`;
+
+/**
+ * Paginated exchange history from EXCHANGED reward ledger rows.
+ *
+ * @param {string|object} userId
+ * @param {{ page: number, limit: number }} options
+ * @returns {Promise<{ records: object[], totalRecords: number }>}
+ */
+const getExchangeRecords = async (userId, { page, limit }) => {
+  const filter = {
+    userId,
+    status: "EXCHANGED",
+  };
+
+  const totalRecords = await Reward.countDocuments(filter);
+  const docs = await Reward.find(filter)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * limit)
+    .limit(limit);
+
+  const records = docs.map((doc) => ({
+    id: String(doc._id),
+    type: "exchange",
+    time: doc.createdAt ? doc.createdAt.toISOString() : null,
+    payment: formatEth(doc.rewardEth),
+    received: formatUsdt(doc.rewardUsd),
+    status: "success",
+  }));
+
+  return { records, totalRecords };
+};
+
 module.exports = {
   exchangeReward,
+  getExchangeRecords,
 };

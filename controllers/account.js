@@ -1,6 +1,10 @@
 const { getAccountSummary } = require("../services/account");
 const { exchangeReward: exchangeRewardService } = require("../services/exchange");
 const { withdrawReward: withdrawRewardService } = require("../services/withdraw");
+const {
+  getAccountRecords,
+  ALLOWED_TYPES,
+} = require("../services/record");
 
 const getAccount = async (req, res) => {
   try {
@@ -53,6 +57,43 @@ const getAccount = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while fetching account",
+    });
+  }
+};
+
+const getRecords = async (req, res) => {
+  try {
+    const { type, page, limit } = req.query;
+
+    if (!type || !ALLOWED_TYPES.includes(String(type))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid record type.",
+      });
+    }
+
+    const data = await getAccountRecords(req.user, String(type), {
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    console.error("Get records error:", error.message);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while fetching account records",
     });
   }
 };
@@ -163,6 +204,7 @@ const withdrawReward = async (req, res) => {
 
 module.exports = {
   getAccount,
+  getRecords,
   exchangeReward,
   withdrawReward,
 };
