@@ -13,4 +13,16 @@ const generateToken = (userId, walletAddress) => {
   );
 };
 
-module.exports = { generateToken };
+const generateAdminToken = (adminId) => {
+  return jwt.sign(
+    {
+      adminId,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "7d",
+    }
+  );
+};
+
+module.exports = { generateToken, generateAdminToken };

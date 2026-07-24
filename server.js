@@ -8,12 +8,11 @@ const morgan = require("morgan");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const accountRoutes = require("./routes/account");
+const adminAuthRoutes = require("./routes/adminAuth");
 const { startRewardCron } = require("./cron/rewardCron");
+const createDefaultAdmin = require("./services/createDefaultAdmin");
 
 const app = express();
-
-connectDB();
-startRewardCron();
 
 app.use(cors());
 app.use(helmet());
@@ -21,7 +20,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 app.get("/health", (req, res) => {
-  res.status(200).json({
+  res.json({
     success: true,
     message: "Server is running...",
   });
@@ -29,9 +28,25 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/account", accountRoutes);
+app.use("/api/admin/auth", adminAuthRoutes);
 
 const PORT = process.env.PORT || 5001;
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await connectDB();
+
+    await createDefaultAdmin();
+
+    startRewardCron();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
+};
+
+startServer();
