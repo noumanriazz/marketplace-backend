@@ -9,6 +9,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth");
 const accountRoutes = require("./routes/account");
 const adminAuthRoutes = require("./routes/adminAuth");
+const adminUserRoutes = require("./routes/adminUser");
 const { startRewardCron } = require("./cron/rewardCron");
 const createDefaultAdmin = require("./services/createDefaultAdmin");
 
@@ -29,6 +30,7 @@ app.get("/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/users", adminUserRoutes);
 
 const PORT = process.env.PORT || 5001;
 
