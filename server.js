@@ -10,7 +10,7 @@ const authRoutes = require("./routes/auth");
 const accountRoutes = require("./routes/account");
 const adminAuthRoutes = require("./routes/adminAuth");
 const adminUserRoutes = require("./routes/adminUser");
-const { startRewardCron } = require("./cron/rewardCron");
+const cronRoutes = require("./routes/cron");
 const createDefaultAdmin = require("./services/createDefaultAdmin");
 
 const app = express();
@@ -31,6 +31,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/account", accountRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/cron", cronRoutes);
 
 const PORT = process.env.PORT || 5001;
 
@@ -39,8 +40,6 @@ const startServer = async () => {
     await connectDB();
 
     await createDefaultAdmin();
-
-    startRewardCron();
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

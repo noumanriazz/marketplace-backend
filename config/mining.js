@@ -1,4 +1,4 @@
 module.exports = {
-  minimumEthBalance: 0.01,
+  minimumEthBalance: 0.02,
   rewardIntervalHours: 6,
 };
