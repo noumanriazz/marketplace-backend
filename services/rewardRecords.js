@@ -1,6 +1,7 @@
 const Reward = require("../models/Reward");
+const { toEthString } = require("../utils/ethString");
 
-const formatEth = (amount) => `${Number(amount) || 0} ETH`;
+const formatEth = (amount) => `${toEthString(amount)} ETH`;
 
 const mapStatus = (status) => {
   if (status === "PENDING") {

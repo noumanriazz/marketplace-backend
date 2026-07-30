@@ -2,6 +2,7 @@ const Reward = require("../models/Reward");
 const { getEthPrice } = require("./ethPrice");
 const { convertEthToUsd } = require("../utils/reward");
 const { getRewardSummary } = require("./rewardSummary");
+const { toEthString } = require("../utils/ethString");
 
 const EPSILON = 1e-18;
 
@@ -75,7 +76,7 @@ const exchangeReward = async (user, amount) => {
           filter: { _id: reward._id },
           update: {
             $set: {
-              rewardEth: leftoverEth,
+              rewardEth: toEthString(leftoverEth),
               rewardUsd: convertEthToUsd(leftoverEth, reward.ethPrice),
             },
           },
@@ -85,11 +86,11 @@ const exchangeReward = async (user, amount) => {
       exchangedDocs.push({
         userId: reward.userId,
         walletAddress: reward.walletAddress,
-        walletBalanceEth: reward.walletBalanceEth,
+        walletBalanceEth: toEthString(reward.walletBalanceEth),
         walletBalanceUsd: reward.walletBalanceUsd,
         ethPrice,
         rewardPercentage: reward.rewardPercentage,
-        rewardEth: exchangedEth,
+        rewardEth: toEthString(exchangedEth),
         rewardUsd: convertEthToUsd(exchangedEth, ethPrice),
         rewardType: reward.rewardType || "mining",
         status: "EXCHANGED",
@@ -125,7 +126,7 @@ const exchangeReward = async (user, amount) => {
   };
 };
 
-const formatEth = (amount) => `${Number(amount) || 0} ETH`;
+const formatEth = (amount) => `${toEthString(amount)} ETH`;
 const formatUsdt = (amount) => `${Number(amount) || 0} USDT`;
 
 /**
