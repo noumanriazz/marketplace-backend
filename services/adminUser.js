@@ -90,6 +90,7 @@ const getUsers = async (options = {}) => {
       miningStatus: metrics.miningStatus,
       exchangeable: metrics.exchangeable,
       withdrawable: metrics.withdrawable,
+      lastIpAddress: user.lastIpAddress || null,
       createdAt: user.createdAt,
     });
   }
@@ -143,6 +144,7 @@ const getUserById = async (userId) => {
     totalClaimed: metrics.totalClaimed,
     referralCode: user.referralCode || null,
     referredBy: user.referredBy || null,
+    lastIpAddress: user.lastIpAddress || null,
     createdAt: user.createdAt,
   };
 };

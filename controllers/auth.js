@@ -4,6 +4,7 @@ const {
   generateUniqueReferralCode,
   ensureReferralCode,
 } = require("../utils/referral");
+const { getClientIp } = require("../utils/ip");
 
 const login = async (req, res) => {
   try {
@@ -17,6 +18,8 @@ const login = async (req, res) => {
     }
 
     const normalizedAddress = walletAddress.toLowerCase().trim();
+    const clientIp = getClientIp(req);
+    
 
     let user = await User.findOne({ walletAddress: normalizedAddress });
     let isNewUser = false;
@@ -24,6 +27,7 @@ const login = async (req, res) => {
     if (user) {
       user.walletType = walletType;
       user.chainId = chainId;
+      user.lastIpAddress = clientIp;
       await user.save();
       user = await ensureReferralCode(user);
     } else {
@@ -54,6 +58,7 @@ const login = async (req, res) => {
         chainId,
         referralCode: await generateUniqueReferralCode(),
         referredBy,
+        lastIpAddress: clientIp,
       });
     }
 
