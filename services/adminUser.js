@@ -3,6 +3,7 @@ const User = require("../models/User");
 const { getEthBalance } = require("./blockchain");
 const { getMiningStatus } = require("./mining");
 const { getRewardSummary } = require("./rewardSummary");
+const { toEthString } = require("../utils/ethString");
 
 const formatMiningStatus = (status) => {
   if (status === "running") {
@@ -19,17 +20,12 @@ const formatMiningStatus = (status) => {
  * @returns {Promise<object>}
  */
 const buildUserMetrics = async (user) => {
-  let walletBalance = 0;
+  let walletBalance = "0";
   let miningStatus = "Stopped";
 
   try {
     const balanceRaw = await getEthBalance(user.walletAddress);
-    walletBalance = Number(balanceRaw);
-
-    if (Number.isNaN(walletBalance)) {
-      walletBalance = 0;
-    }
-
+    walletBalance = toEthString(balanceRaw);
     miningStatus = formatMiningStatus(getMiningStatus(balanceRaw));
   } catch (error) {
     console.error(

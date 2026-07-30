@@ -14,7 +14,7 @@ const rewardSchema = new mongoose.Schema(
       trim: true,
     },
     walletBalanceEth: {
-      type: Number,
+      type: String,
       required: [true, "Wallet balance ETH is required"],
     },
     walletBalanceUsd: {
@@ -30,7 +30,7 @@ const rewardSchema = new mongoose.Schema(
       required: [true, "Reward percentage is required"],
     },
     rewardEth: {
-      type: Number,
+      type: String,
       required: [true, "Reward ETH is required"],
     },
     rewardUsd: {

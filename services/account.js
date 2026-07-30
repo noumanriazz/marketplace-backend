@@ -5,6 +5,7 @@ const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
 const { getRewardSummary } = require("./rewardSummary");
 const { ensureReferralCode, buildReferralLink } = require("../utils/referral");
+const { toEthString } = require("../utils/ethString");
 
 /**
  * Builds the Account page summary.
@@ -32,7 +33,6 @@ const getAccountSummary = async (user) => {
 
   const walletAddress = dbUser.walletAddress;
   const walletBalanceRaw = await getEthBalance(walletAddress);
-  const walletBalance = Number(walletBalanceRaw);
   const ethPrice = await getEthPrice();
   const miningStatus = getMiningStatus(walletBalanceRaw);
   const rewardPreview = calculateReward(walletBalanceRaw, ethPrice);
@@ -46,13 +46,13 @@ const getAccountSummary = async (user) => {
     shareDividend: rewardSummary.shareDividend,
     referralCode: dbUser.referralCode,
     referralLink: buildReferralLink(dbUser.referralCode),
-    walletBalance: Number.isNaN(walletBalance) ? 0 : walletBalance,
+    walletBalance: toEthString(walletBalanceRaw),
     symbol: "ETH",
     ethPrice,
     miningStatus,
     rewardPreview: {
       dailyRewardUsd: rewardPreview.dailyRewardUsd,
-      sixHourRewardEth: rewardPreview.sixHourRewardEth,
+      sixHourRewardEth: toEthString(rewardPreview.sixHourRewardEth),
     },
   };
 };

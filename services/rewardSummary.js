@@ -1,4 +1,5 @@
 const Reward = require("../models/Reward");
+const { toEthString } = require("../utils/ethString");
 
 const isReferralType = (rewardType) =>
   rewardType === "referral" || rewardType === "REFERRAL";
@@ -9,11 +10,11 @@ const isReferralType = (rewardType) =>
  *
  * @param {string|object} userId
  * @returns {Promise<{
- *   exchangeable: number,
+ *   exchangeable: string,
  *   withdrawable: number,
- *   totalRewards: number,
+ *   totalRewards: string,
  *   totalClaimed: number,
- *   shareDividend: number
+ *   shareDividend: string
  * }>}
  */
 const getRewardSummary = async (userId) => {
@@ -51,11 +52,11 @@ const getRewardSummary = async (userId) => {
   }
 
   return {
-    exchangeable,
+    exchangeable: toEthString(exchangeable),
     withdrawable,
-    totalRewards,
+    totalRewards: toEthString(totalRewards),
     totalClaimed,
-    shareDividend,
+    shareDividend: toEthString(shareDividend),
   };
 };
 

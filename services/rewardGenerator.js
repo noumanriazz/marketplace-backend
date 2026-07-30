@@ -5,12 +5,10 @@ const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
 const { REFERRAL_PERCENTAGE } = require("../config/reward");
+const { toEthString } = require("../utils/ethString");
 
 const MIN_BALANCE_SKIP_MESSAGE =
   "Reward skipped because minimum balance requirement is not met.";
-
-const isReferralType = (rewardType) =>
-  rewardType === "referral" || rewardType === "REFERRAL";
 
 /**
  * Creates a referral reward for the referrer when a referred user earns mining rewards.
@@ -43,11 +41,11 @@ const createReferralReward = async (minerUser, miningReward, ethPrice) => {
   return Reward.create({
     userId: referrer._id,
     walletAddress: referrer.walletAddress,
-    walletBalanceEth: miningReward.walletBalanceEth,
+    walletBalanceEth: toEthString(miningReward.walletBalanceEth),
     walletBalanceUsd: miningReward.walletBalanceUsd,
     ethPrice,
     rewardPercentage: REFERRAL_PERCENTAGE,
-    rewardEth: referralEth,
+    rewardEth: toEthString(referralEth),
     rewardUsd: referralUsd,
     rewardType: "referral",
     status: "PENDING",
@@ -124,9 +122,6 @@ const generateReward = async (user) => {
       };
     }
 
-    console.log(rewardResult, "rewardResult");
-    console.log(rewardResult.sixHourRewardEth, "rewardResult.sixHourRewardEth");
-
     if (!rewardResult || rewardResult.sixHourRewardEth <= 0) {
       return {
         success: false,
@@ -139,12 +134,12 @@ const generateReward = async (user) => {
       const reward = await Reward.create({
         userId: user._id,
         walletAddress,
-        walletBalanceEth: rewardResult.walletBalanceEth,
+        walletBalanceEth: toEthString(rewardResult.walletBalanceEth),
         walletBalanceUsd: rewardResult.walletBalanceUsd,
         ethPrice,
         rewardPercentage: rewardResult.rewardPercentage,
         rewardUsd: rewardResult.sixHourRewardUsd,
-        rewardEth: rewardResult.sixHourRewardEth,
+        rewardEth: toEthString(rewardResult.sixHourRewardEth),
         rewardType: "mining",
         status: "PENDING",
         generatedAt: new Date(),
@@ -195,5 +190,4 @@ const generateReward = async (user) => {
 module.exports = {
   generateReward,
   createReferralReward,
-  isReferralType,
 };
