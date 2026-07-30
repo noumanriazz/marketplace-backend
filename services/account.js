@@ -4,10 +4,7 @@ const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { calculateReward } = require("./reward");
 const { getRewardSummary } = require("./rewardSummary");
-const {
-  ensureReferralCode,
-  buildReferralLink,
-} = require("../utils/referral");
+const { ensureReferralCode, buildReferralLink } = require("../utils/referral");
 
 /**
  * Builds the Account page summary.

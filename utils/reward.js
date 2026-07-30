@@ -8,7 +8,7 @@ const { rewardSlabs, intervalsPerDay } = require("../config/reward");
 const getRewardPercentage = (walletUsdValue) => {
   const usdValue = Number(walletUsdValue);
 
-  if (Number.isNaN(usdValue) || usdValue < 1) {
+  if (Number.isNaN(usdValue)) {
     return 0;
   }
 

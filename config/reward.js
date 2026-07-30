@@ -5,7 +5,7 @@ module.exports = {
    * Example: 1000 USD uses 1.6%, 5000 USD uses 1.8%.
    */
   rewardSlabs: [
-    { min: 1, max: 1000, percentage: 1.5 },
+    { min: 0, max: 1000, percentage: 1.5 },
     { min: 1000, max: 3000, percentage: 1.6 },
     { min: 3000, max: 5000, percentage: 1.7 },
     { min: 5000, max: 10000, percentage: 1.8 },

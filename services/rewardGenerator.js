@@ -90,7 +90,7 @@ const generateReward = async (user) => {
 
     if (miningStatus === "stopped") {
       console.log(
-        `⚠️  ${MIN_BALANCE_SKIP_MESSAGE} Wallet: ${walletAddress}, Balance: ${walletBalanceEth}`
+        `⚠️  ${MIN_BALANCE_SKIP_MESSAGE} Wallet: ${walletAddress}, Balance: ${walletBalanceEth}`,
       );
 
       return {
@@ -124,6 +124,9 @@ const generateReward = async (user) => {
       };
     }
 
+    console.log(rewardResult, "rewardResult");
+    console.log(rewardResult.sixHourRewardEth, "rewardResult.sixHourRewardEth");
+
     if (!rewardResult || rewardResult.sixHourRewardEth <= 0) {
       return {
         success: false,
@@ -154,19 +157,16 @@ const generateReward = async (user) => {
         referralReward = await createReferralReward(
           minerUser,
           reward,
-          ethPrice
+          ethPrice,
         );
 
         if (referralReward) {
           console.log(
-            `✅ Referral reward created for referrer of ${walletAddress}`
+            `✅ Referral reward created for referrer of ${walletAddress}`,
           );
         }
       } catch (referralError) {
-        console.error(
-          "Referral reward creation error:",
-          referralError.message
-        );
+        console.error("Referral reward creation error:", referralError.message);
       }
 
       return {
