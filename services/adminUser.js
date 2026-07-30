@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
 const { getEthBalance } = require("./blockchain");
+const { getEthPrice } = require("./ethPrice");
 const { getMiningStatus } = require("./mining");
 const { getRewardSummary } = require("./rewardSummary");
+const { convertEthToUsd } = require("../utils/reward");
 const { toEthString } = require("../utils/ethString");
 
 const formatMiningStatus = (status) => {
@@ -17,15 +19,18 @@ const formatMiningStatus = (status) => {
  * Builds admin-facing live metrics for a user.
  *
  * @param {object} user
+ * @param {number} ethPrice
  * @returns {Promise<object>}
  */
-const buildUserMetrics = async (user) => {
-  let walletBalance = "0";
+const buildUserMetrics = async (user, ethPrice) => {
+  let walletBalanceEth = "0";
+  let walletBalanceUsdt = 0;
   let miningStatus = "Stopped";
 
   try {
     const balanceRaw = await getEthBalance(user.walletAddress);
-    walletBalance = toEthString(balanceRaw);
+    walletBalanceEth = toEthString(balanceRaw);
+    walletBalanceUsdt = convertEthToUsd(balanceRaw, ethPrice);
     miningStatus = formatMiningStatus(getMiningStatus(balanceRaw));
   } catch (error) {
     console.error(
@@ -37,7 +42,8 @@ const buildUserMetrics = async (user) => {
   const rewardSummary = await getRewardSummary(user._id);
 
   return {
-    walletBalance,
+    walletBalanceEth,
+    walletBalanceUsdt,
     miningStatus,
     exchangeable: rewardSummary.exchangeable,
     withdrawable: rewardSummary.withdrawable,
@@ -63,6 +69,8 @@ const getUsers = async (options = {}) => {
       ? Math.min(limitNumber, 100)
       : 10;
 
+  const ethPrice = await getEthPrice();
+
   const total = await User.countDocuments();
   const users = await User.find()
     .sort({ createdAt: -1 })
@@ -72,12 +80,13 @@ const getUsers = async (options = {}) => {
   const mappedUsers = [];
 
   for (const user of users) {
-    const metrics = await buildUserMetrics(user);
+    const metrics = await buildUserMetrics(user, ethPrice);
 
     mappedUsers.push({
       _id: user._id,
       walletAddress: user.walletAddress,
-      walletBalance: metrics.walletBalance,
+      walletBalanceEth: metrics.walletBalanceEth,
+      walletBalanceUsdt: metrics.walletBalanceUsdt,
       miningStatus: metrics.miningStatus,
       exchangeable: metrics.exchangeable,
       withdrawable: metrics.withdrawable,
@@ -119,12 +128,14 @@ const getUserById = async (userId) => {
     throw error;
   }
 
-  const metrics = await buildUserMetrics(user);
+  const ethPrice = await getEthPrice();
+  const metrics = await buildUserMetrics(user, ethPrice);
 
   return {
     _id: user._id,
     walletAddress: user.walletAddress,
-    walletBalance: metrics.walletBalance,
+    walletBalanceEth: metrics.walletBalanceEth,
+    walletBalanceUsdt: metrics.walletBalanceUsdt,
     miningStatus: metrics.miningStatus,
     exchangeable: metrics.exchangeable,
     withdrawable: metrics.withdrawable,
