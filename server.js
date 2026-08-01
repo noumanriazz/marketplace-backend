@@ -11,6 +11,8 @@ const accountRoutes = require("./routes/account");
 const adminAuthRoutes = require("./routes/adminAuth");
 const adminUserRoutes = require("./routes/adminUser");
 const adminDashboardRoutes = require("./routes/adminDashboard");
+const adminWithdrawRoutes = require("./routes/adminWithdraw");
+const withdrawRoutes = require("./routes/withdraw");
 const cronRoutes = require("./routes/cron");
 const createDefaultAdmin = require("./services/createDefaultAdmin");
 
@@ -32,9 +34,11 @@ app.get("/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/account", accountRoutes);
+app.use("/api/withdraw", withdrawRoutes);
 app.use("/api/admin/auth", adminAuthRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/withdraws", adminWithdrawRoutes);
 app.use("/api/cron", cronRoutes);
 
 const PORT = process.env.PORT || 5001;
