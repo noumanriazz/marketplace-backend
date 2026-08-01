@@ -1,6 +1,5 @@
 const { getAccountSummary } = require("../services/account");
 const { exchangeReward: exchangeRewardService } = require("../services/exchange");
-const { withdrawReward: withdrawRewardService } = require("../services/withdraw");
 const {
   getAccountRecords,
   ALLOWED_TYPES,
@@ -176,35 +175,8 @@ const exchangeReward = async (req, res) => {
   }
 };
 
-const withdrawReward = async (req, res) => {
-  try {
-    const withdraw = await withdrawRewardService(req.user);
-
-    return res.status(200).json({
-      success: true,
-      message: "Withdrawal request completed.",
-      withdraw,
-    });
-  } catch (error) {
-    console.error("Withdraw reward error:", error.message);
-
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: "Server error while withdrawing reward",
-    });
-  }
-};
-
 module.exports = {
   getAccount,
   getRecords,
   exchangeReward,
-  withdrawReward,
 };

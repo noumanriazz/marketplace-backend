@@ -1,3 +1,3 @@
 module.exports = {
-  minimumWithdrawUsdt: 1,
+  minimumWithdrawUsdt: 0.001,
 };
