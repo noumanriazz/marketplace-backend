@@ -13,6 +13,7 @@ const adminUserRoutes = require("./routes/adminUser");
 const adminDashboardRoutes = require("./routes/adminDashboard");
 const adminWithdrawRoutes = require("./routes/adminWithdraw");
 const adminNotificationRoutes = require("./routes/adminNotification");
+const adminExchangeRoutes = require("./routes/adminExchange");
 const withdrawRoutes = require("./routes/withdraw");
 const cronRoutes = require("./routes/cron");
 const createDefaultAdmin = require("./services/createDefaultAdmin");
@@ -41,6 +42,7 @@ app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/withdraws", adminWithdrawRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
+app.use("/api/admin/exchanges", adminExchangeRoutes);
 app.use("/api/cron", cronRoutes);
 
 const PORT = process.env.PORT || 5001;
