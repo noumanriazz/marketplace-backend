@@ -147,9 +147,9 @@ const createWithdrawRequest = async (user, amount) => {
     status: "Pending",
   });
 
-  const shortWallet = `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`;
+  // const shortWallet = `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`;
   const title = "New Withdrawal Request";
-  const message = `${shortWallet} requested a withdrawal of ${amount} USDT.`;
+  const message = `${user.walletAddress} requested a withdrawal of ${amount} USDT.`;
 
   await createNotification({
     title,
