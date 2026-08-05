@@ -1,7 +1,9 @@
+const mongoose = require("mongoose");
 const {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  sendNotificationToUser,
 } = require("../services/adminNotification");
 
 const getAdminNotifications = async (req, res) => {
@@ -77,8 +79,66 @@ const markAllAdminNotificationsAsRead = async (req, res) => {
   }
 };
 
+const sendAdminNotification = async (req, res) => {
+  try {
+    const { userId, message } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID.",
+      });
+    }
+
+    if (typeof message !== "string" || !message.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required.",
+      });
+    }
+
+    const trimmedMessage = message.trim();
+
+    if (trimmedMessage.length > 500) {
+      return res.status(400).json({
+        success: false,
+        message: "Message must not exceed 500 characters.",
+      });
+    }
+
+    await sendNotificationToUser(userId, trimmedMessage);
+
+    return res.status(200).json({
+      success: true,
+      message: "Notification sent successfully.",
+    });
+  } catch (error) {
+    console.error("Admin send notification error:", error.message);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while sending notification",
+    });
+  }
+};
+
 module.exports = {
   getAdminNotifications,
   markAdminNotificationAsRead,
   markAllAdminNotificationsAsRead,
+  sendAdminNotification,
 };

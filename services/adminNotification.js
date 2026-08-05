@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
+const User = require("../models/User");
+const { triggerPusherEvent } = require("../utils/pusher");
 
 /**
  * Returns paginated admin notifications with unread count.
@@ -87,8 +89,41 @@ const markAllNotificationsAsRead = async () => {
   };
 };
 
+/**
+ * Sends a direct notification to one user.
+ *
+ * @param {string} userId
+ * @param {string} message
+ * @returns {Promise<object>}
+ */
+const sendNotificationToUser = async (userId, message) => {
+  const user = await User.findById(userId).select("_id");
+
+  if (!user) {
+    const error = new Error("User not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const notification = await Notification.create({
+    userId: user._id,
+    message,
+    type: "admin",
+    isRead: false,
+  });
+
+  await triggerPusherEvent(
+    `user-${user._id}`,
+    "new-notification",
+    { refresh: true }
+  );
+
+  return notification;
+};
+
 module.exports = {
   getNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  sendNotificationToUser,
 };
