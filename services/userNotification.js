@@ -1,15 +1,14 @@
 const mongoose = require("mongoose");
 const Notification = require("../models/Notification");
-const User = require("../models/User");
-const { triggerPusherEvent } = require("../utils/pusher");
 
 /**
- * Returns paginated admin notifications with unread count.
+ * Returns paginated notifications for a user.
  *
+ * @param {string|object} userId
  * @param {{ page?: number|string, limit?: number|string }} options
  * @returns {Promise<object>}
  */
-const getNotifications = async (options = {}) => {
+const getUserNotifications = async (userId, options = {}) => {
   const pageNumber = Number(options.page);
   const limitNumber = Number(options.limit);
 
@@ -20,14 +19,16 @@ const getNotifications = async (options = {}) => {
       ? Math.min(limitNumber, 100)
       : 10;
 
+  const filter = { userId };
+
   const [total, unreadCount, notifications] = await Promise.all([
-    Notification.countDocuments(),
-    Notification.countDocuments({ isRead: false }),
-    Notification.find()
+    Notification.countDocuments(filter),
+    Notification.countDocuments({ ...filter, isRead: false }),
+    Notification.find(filter)
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit)
-      .select("_id title message type isRead createdAt"),
+      .select("_id title message type referenceId isRead createdAt"),
   ]);
 
   const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
@@ -45,19 +46,23 @@ const getNotifications = async (options = {}) => {
 };
 
 /**
- * Marks a single notification as read.
+ * Marks one user notification as read.
  *
+ * @param {string|object} userId
  * @param {string} notificationId
  * @returns {Promise<object>}
  */
-const markNotificationAsRead = async (notificationId) => {
+const markUserNotificationAsRead = async (userId, notificationId) => {
   if (!mongoose.Types.ObjectId.isValid(notificationId)) {
     const error = new Error("Invalid notification id.");
     error.statusCode = 400;
     throw error;
   }
 
-  const notification = await Notification.findById(notificationId);
+  const notification = await Notification.findOne({
+    _id: notificationId,
+    userId,
+  });
 
   if (!notification) {
     const error = new Error("Notification not found.");
@@ -74,13 +79,14 @@ const markNotificationAsRead = async (notificationId) => {
 };
 
 /**
- * Marks all unread notifications as read.
+ * Marks all unread notifications as read for a user.
  *
+ * @param {string|object} userId
  * @returns {Promise<{ modifiedCount: number }>}
  */
-const markAllNotificationsAsRead = async () => {
+const markAllUserNotificationsAsRead = async (userId) => {
   const result = await Notification.updateMany(
-    { isRead: false },
+    { userId, isRead: false },
     { $set: { isRead: true } }
   );
 
@@ -89,42 +95,8 @@ const markAllNotificationsAsRead = async () => {
   };
 };
 
-/**
- * Sends a direct notification to one user.
- *
- * @param {string} userId
- * @param {string} message
- * @param {string} [type="admin"]
- * @returns {Promise<object>}
- */
-const sendNotificationToUser = async (userId, message, type = "admin") => {
-  const user = await User.findById(userId).select("_id");
-
-  if (!user) {
-    const error = new Error("User not found.");
-    error.statusCode = 404;
-    throw error;
-  }
-
-  const notification = await Notification.create({
-    userId: user._id,
-    message,
-    type,
-    isRead: false,
-  });
-
-  await triggerPusherEvent(
-    `user-${user._id}`,
-    "new-notification",
-    { refresh: true }
-  );
-
-  return notification;
-};
-
 module.exports = {
-  getNotifications,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  sendNotificationToUser,
+  getUserNotifications,
+  markUserNotificationAsRead,
+  markAllUserNotificationsAsRead,
 };

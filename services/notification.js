@@ -1,22 +1,30 @@
 const Notification = require("../models/Notification");
 
 /**
- * Creates an admin notification.
+ * Creates a notification.
  *
- * @param {{ title: string, message: string, type: string, referenceId?: object|string|null }} data
+ * @param {{
+ *   title?: string|null,
+ *   message: string,
+ *   type: string,
+ *   referenceId?: object|string|null,
+ *   userId?: object|string|null
+ * }} data
  * @returns {Promise<object>}
  */
 const createNotification = async ({
-  title,
+  title = null,
   message,
   type,
   referenceId = null,
+  userId = null,
 }) => {
   return Notification.create({
     title,
     message,
     type,
     referenceId,
+    userId,
     isRead: false,
   });
 };
