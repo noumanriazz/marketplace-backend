@@ -41,6 +41,18 @@ const activityRewardSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    txHash: {
+      type: String,
+      default: null,
+      trim: true,
+      lowercase: true,
+      sparse: true,
+      unique: true,
+    },
+    claimedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

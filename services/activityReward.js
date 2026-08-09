@@ -4,6 +4,10 @@ const User = require("../models/User");
 const { createNotification } = require("./notification");
 const { triggerPusherEvent } = require("../utils/pusher");
 const { toEthString } = require("../utils/ethString");
+const {
+  verifyUsdtTransfer,
+  getClaimConfig,
+} = require("./blockchain");
 
 /**
  * Returns true when the reward countdown has expired.
@@ -37,6 +41,8 @@ const mapActivityReward = (reward) => ({
   countdownDays: reward.countdownDays,
   status: reward.status,
   isClaimed: reward.isClaimed,
+  txHash: reward.txHash || null,
+  claimedAt: reward.claimedAt || null,
   createdAt: reward.createdAt,
   updatedAt: reward.updatedAt,
 });
@@ -148,32 +154,65 @@ const getCurrentActivityReward = async (userId) => {
 };
 
 /**
- * Validates that a pending Activity Reward exists for claim.
- * Blockchain settlement will be added later.
+ * Claims an Activity Reward after verifying the on-chain USDT transfer.
  *
- * @param {string|object} userId
+ * @param {object} user
+ * @param {string} activityRewardId
+ * @param {string} txHash
  * @returns {Promise<object>}
  */
-const claimActivityReward = async (userId) => {
-  const reward = await ActivityReward.findOne({
-    userId,
-    status: "Pending",
-    isClaimed: false,
-  }).sort({ createdAt: -1 });
-
-  if (!reward) {
-    const error = new Error("No activity reward available to claim.");
+const claimActivityReward = async (user, activityRewardId, txHash) => {
+  if (!user || !user._id || !user.walletAddress) {
+    const error = new Error("User not found.");
     error.statusCode = 404;
     throw error;
   }
 
-  if (String(reward.userId) !== String(userId)) {
+  if (!mongoose.Types.ObjectId.isValid(activityRewardId)) {
+    const error = new Error("Invalid activity reward id.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!txHash || typeof txHash !== "string" || !txHash.trim()) {
+    const error = new Error("Transaction hash is required.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const normalizedTxHash = txHash.trim().toLowerCase();
+
+  const existingTx = await ActivityReward.findOne({
+    txHash: normalizedTxHash,
+  });
+
+  if (existingTx) {
+    const error = new Error("Transaction has already been used.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const reward = await ActivityReward.findById(activityRewardId);
+
+  if (!reward) {
+    const error = new Error("Activity reward not found.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (String(reward.userId) !== String(user._id)) {
     const error = new Error("Activity reward does not belong to this user.");
     error.statusCode = 403;
     throw error;
   }
 
-  if (reward.isClaimed || reward.status !== "Pending") {
+  if (reward.isClaimed || reward.status === "Claimed") {
+    const error = new Error("Activity reward has already been claimed.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (reward.status !== "Pending") {
     const error = new Error("Activity reward is not available to claim.");
     error.statusCode = 400;
     throw error;
@@ -187,6 +226,38 @@ const claimActivityReward = async (userId) => {
     error.statusCode = 400;
     throw error;
   }
+
+  let claimConfig;
+
+  try {
+    claimConfig = getClaimConfig();
+  } catch (configError) {
+    console.error("Claim config error:", configError.message);
+    const error = new Error("Transaction verification failed.");
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const verification = await verifyUsdtTransfer({
+    txHash: normalizedTxHash,
+    expectedFrom: user.walletAddress,
+    expectedTo: claimConfig.adminWalletAddress,
+    expectedAmount: reward.requiredAmount,
+  });
+
+  if (!verification.success) {
+    const error = new Error(
+      verification.message || "Transaction verification failed."
+    );
+    error.statusCode = 400;
+    throw error;
+  }
+
+  reward.status = "Claimed";
+  reward.isClaimed = true;
+  reward.txHash = normalizedTxHash;
+  reward.claimedAt = new Date();
+  await reward.save();
 
   return mapActivityReward(reward);
 };
