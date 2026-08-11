@@ -155,6 +155,19 @@ const validateUpdatePayload = (payload = {}) => {
 };
 
 /**
+ * Maps a MiningMachine document to a user-facing response object.
+ * @param {object} machine
+ * @returns {object}
+ */
+const mapActiveMachine = (machine) => ({
+  _id: machine._id,
+  name: machine.name,
+  priceUsdt: machine.priceUsdt,
+  dailyYieldPercentage: machine.dailyYieldPercentage,
+  durationDays: machine.durationDays,
+});
+
+/**
  * Creates a mining machine.
  * @param {object} payload
  * @returns {Promise<object>}
@@ -163,6 +176,19 @@ const createMiningMachine = async (payload) => {
   const data = validateCreatePayload(payload);
   const machine = await MiningMachine.create(data);
   return mapMachine(machine);
+};
+
+/**
+ * Returns Active mining machines for users, newest first.
+ * @returns {Promise<object[]>}
+ */
+const getActiveMiningMachines = async () => {
+  const machines = await MiningMachine.find({ status: "Active" })
+    .select("_id name priceUsdt dailyYieldPercentage durationDays")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  return machines.map(mapActiveMachine);
 };
 
 /**
@@ -279,6 +305,7 @@ const deleteMiningMachine = async (id) => {
 
 module.exports = {
   createMiningMachine,
+  getActiveMiningMachines,
   getMiningMachines,
   getMiningMachineById,
   updateMiningMachine,
