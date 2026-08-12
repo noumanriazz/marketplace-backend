@@ -165,7 +165,7 @@ const verifyUsdtTransfer = async ({
     if (!txHash || !isHash(txHash)) {
       return {
         success: false,
-        message: "Invalid transaction hash.",
+        message: "Transaction verification failed.",
       };
     }
 
@@ -181,10 +181,13 @@ const verifyUsdtTransfer = async ({
     const configuredChainId = getConfiguredChainId();
     const client = getPublicClient();
 
-    if (getAddress(expectedTo) !== adminWallet) {
+    const normalizedFrom = getAddress(expectedFrom);
+    const normalizedTo = getAddress(expectedTo);
+
+    if (normalizedTo !== adminWallet) {
       return {
         success: false,
-        message: "Transaction verification failed.",
+        message: "Invalid payment destination.",
       };
     }
 
@@ -197,11 +200,27 @@ const verifyUsdtTransfer = async ({
       };
     }
 
-    const receipt = await client.getTransactionReceipt({
-      hash: txHash,
-    });
+    let receipt;
 
-    if (!receipt || receipt.status !== "success") {
+    try {
+      receipt = await client.getTransactionReceipt({
+        hash: txHash,
+      });
+    } catch (receiptError) {
+      return {
+        success: false,
+        message: "Transaction verification failed.",
+      };
+    }
+
+    if (!receipt) {
+      return {
+        success: false,
+        message: "Transaction verification failed.",
+      };
+    }
+
+    if (receipt.status !== "success") {
       return {
         success: false,
         message: "Transaction verification failed.",
@@ -222,37 +241,78 @@ const verifyUsdtTransfer = async ({
       logs: receipt.logs,
     });
 
-    const matchingTransfer = transferLogs.find((log) => {
-      if (getAddress(log.address) !== usdtAddress) {
-        return false;
-      }
+    const usdtTransfers = transferLogs.filter(
+      (log) => getAddress(log.address) === usdtAddress
+    );
 
+    if (usdtTransfers.length === 0) {
+      return {
+        success: false,
+        message: "Invalid payment token.",
+      };
+    }
+
+    const matchingTransfer = usdtTransfers.find((log) => {
       const from = getAddress(log.args.from);
       const to = getAddress(log.args.to);
       const value = BigInt(log.args.value);
 
       return (
-        from === getAddress(expectedFrom) &&
-        to === getAddress(expectedTo) &&
+        from === normalizedFrom &&
+        to === normalizedTo &&
         value === expectedValue
       );
     });
 
-    if (!matchingTransfer) {
+    if (matchingTransfer) {
+      return { success: true };
+    }
+
+    const senderMatch = usdtTransfers.some(
+      (log) => getAddress(log.args.from) === normalizedFrom
+    );
+
+    if (!senderMatch) {
       return {
         success: false,
-        message: "Transaction verification failed.",
+        message: "Transaction sender does not match the user wallet.",
       };
     }
 
-    return { success: true };
+    const destinationMatch = usdtTransfers.some(
+      (log) =>
+        getAddress(log.args.from) === normalizedFrom &&
+        getAddress(log.args.to) === normalizedTo
+    );
+
+    if (!destinationMatch) {
+      return {
+        success: false,
+        message: "Invalid payment destination.",
+      };
+    }
+
+    return {
+      success: false,
+      message: "Incorrect payment amount.",
+    };
   } catch (error) {
     console.error("USDT transfer verification error:", error.message);
 
-    if (error.message === "Please switch to the correct network.") {
+    if (
+      error.message === "Please switch to the correct network." ||
+      error.message === "Invalid payment destination." ||
+      error.message === "ADMIN_WALLET_ADDRESS is not configured" ||
+      error.message === "USDT_CONTRACT_ADDRESS is not configured" ||
+      error.message === "ETH_RPC_URL is not configured" ||
+      error.message === "CHAIN_ID is not configured"
+    ) {
       return {
         success: false,
-        message: error.message,
+        message:
+          error.message.includes("not configured")
+            ? "Transaction verification failed."
+            : error.message,
       };
     }
 
