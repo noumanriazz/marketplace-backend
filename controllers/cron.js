@@ -1,4 +1,5 @@
 const { rewardScheduler } = require("../services/rewardScheduler");
+const { miningScheduler } = require("../services/miningScheduler");
 
 const runRewardScheduler = async (req, res) => {
   try {
@@ -12,6 +13,7 @@ const runRewardScheduler = async (req, res) => {
     }
 
     const summary = await rewardScheduler();
+    const mining = await miningScheduler();
 
     return res.status(200).json({
       success: true,
@@ -21,6 +23,13 @@ const runRewardScheduler = async (req, res) => {
         generated: summary.generated,
         skipped: summary.skipped,
         failed: summary.failed,
+        mining: {
+          processed: mining.processed,
+          generated: mining.generated,
+          skipped: mining.skipped,
+          failed: mining.failed,
+          completedCount: mining.completedCount,
+        },
       },
     });
   } catch (error) {

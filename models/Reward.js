@@ -42,6 +42,15 @@ const rewardSchema = new mongoose.Schema(
       enum: ["mining", "referral", "MINING", "REFERRAL", "BONUS"],
       default: "mining",
     },
+    miningOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "MiningOrder",
+      default: null,
+    },
+    rewardIntervalStart: {
+      type: Date,
+      default: null,
+    },
     status: {
       type: String,
       enum: ["PENDING", "EXCHANGED", "WITHDRAWN"],
@@ -54,6 +63,17 @@ const rewardSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  }
+);
+
+rewardSchema.index(
+  { miningOrderId: 1, rewardIntervalStart: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      miningOrderId: { $type: "objectId" },
+      rewardIntervalStart: { $type: "date" },
+    },
   }
 );
 

@@ -2,6 +2,7 @@ const {
   purchaseMiningMachine,
   getMiningPaymentConfig,
 } = require("../services/miningOrder");
+const { generateMiningReward } = require("../services/miningReward");
 
 const purchaseMiningMachineController = async (req, res) => {
   try {
@@ -64,7 +65,43 @@ const getMiningPaymentConfigController = async (req, res) => {
   }
 };
 
+const generateMiningRewardController = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    if (!orderId) {
+      return res.status(400).json({
+        success: false,
+        message: "Mining order not found.",
+      });
+    }
+
+    const reward = await generateMiningReward(orderId, req.user);
+
+    return res.status(201).json({
+      success: true,
+      message: "Mining reward generated successfully.",
+      reward,
+    });
+  } catch (error) {
+    console.error("Generate mining reward error:", error.message);
+
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while generating mining reward",
+    });
+  }
+};
+
 module.exports = {
   purchaseMiningMachineController,
   getMiningPaymentConfigController,
+  generateMiningRewardController,
 };

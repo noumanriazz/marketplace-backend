@@ -56,6 +56,10 @@ const miningOrderSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Expires at is required"],
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
