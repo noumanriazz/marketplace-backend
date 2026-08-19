@@ -15,6 +15,7 @@ const adminWithdrawRoutes = require("./routes/adminWithdraw");
 const adminNotificationRoutes = require("./routes/adminNotification");
 const adminExchangeRoutes = require("./routes/adminExchange");
 const adminMiningMachineRoutes = require("./routes/adminMiningMachine");
+const adminSettingsRoutes = require("./routes/adminSettings");
 const miningMachineRoutes = require("./routes/miningMachine");
 const miningOrderRoutes = require("./routes/miningOrder");
 const activityRewardRoutes = require("./routes/activityReward");
@@ -53,6 +54,7 @@ app.use("/api/admin/withdraws", adminWithdrawRoutes);
 app.use("/api/admin/notifications", adminNotificationRoutes);
 app.use("/api/admin/exchanges", adminExchangeRoutes);
 app.use("/api/admin/mining-machines", adminMiningMachineRoutes);
+app.use("/api/admin/settings", adminSettingsRoutes);
 app.use("/api/cron", cronRoutes);
 
 const PORT = process.env.PORT || 5001;

@@ -32,16 +32,6 @@ const getUsdtContractAddress = () => {
   return getAddress(address);
 };
 
-const getAdminWalletAddress = () => {
-  const address = process.env.ADMIN_WALLET_ADDRESS;
-
-  if (!address || !isAddress(address)) {
-    throw new Error("ADMIN_WALLET_ADDRESS is not configured");
-  }
-
-  return getAddress(address);
-};
-
 const getPublicClient = () => {
   if (publicClient) {
     return publicClient;
@@ -177,19 +167,11 @@ const verifyUsdtTransfer = async ({
     }
 
     const usdtAddress = getUsdtContractAddress();
-    const adminWallet = getAdminWalletAddress();
     const configuredChainId = getConfiguredChainId();
     const client = getPublicClient();
 
     const normalizedFrom = getAddress(expectedFrom);
     const normalizedTo = getAddress(expectedTo);
-
-    if (normalizedTo !== adminWallet) {
-      return {
-        success: false,
-        message: "Invalid payment destination.",
-      };
-    }
 
     const networkChainId = await client.getChainId();
 
@@ -302,7 +284,6 @@ const verifyUsdtTransfer = async ({
     if (
       error.message === "Please switch to the correct network." ||
       error.message === "Invalid payment destination." ||
-      error.message === "ADMIN_WALLET_ADDRESS is not configured" ||
       error.message === "USDT_CONTRACT_ADDRESS is not configured" ||
       error.message === "ETH_RPC_URL is not configured" ||
       error.message === "CHAIN_ID is not configured"
@@ -325,20 +306,25 @@ const verifyUsdtTransfer = async ({
 
 /**
  * Returns claim configuration for the frontend.
- * @returns {{ adminWalletAddress: string, usdtContractAddress: string, chainId: number }}
+ * Admin wallet comes from MongoDB Settings.
+ * @returns {Promise<{ adminWalletAddress: string, usdtContractAddress: string, chainId: number }>}
  */
-const getClaimConfig = () => ({
-  adminWalletAddress: getAdminWalletAddress(),
-  usdtContractAddress: getUsdtContractAddress(),
-  chainId: getConfiguredChainId(),
-});
+const getClaimConfig = async () => {
+  const { getStoredAdminWalletAddress } = require("./settings");
+
+  return {
+    adminWalletAddress: await getStoredAdminWalletAddress(),
+    usdtContractAddress: getUsdtContractAddress(),
+    chainId: getConfiguredChainId(),
+  };
+};
 
 module.exports = {
   getPublicClient,
   getEthBalance,
   verifyUsdtTransfer,
   getClaimConfig,
-  getAdminWalletAddress,
   getUsdtContractAddress,
+  getConfiguredChainId,
   toTokenUnits,
 };

@@ -49,11 +49,11 @@ const purchaseMiningMachineController = async (req, res) => {
 
 const getMiningPaymentConfigController = async (req, res) => {
   try {
-    const paymentConfig = getMiningPaymentConfig();
+    const config = await getMiningPaymentConfig();
 
     return res.status(200).json({
       success: true,
-      paymentConfig,
+      config,
     });
   } catch (error) {
     console.error("Get mining payment config error:", error.message);

@@ -230,9 +230,16 @@ const claimActivityReward = async (user, activityRewardId, txHash) => {
   let claimConfig;
 
   try {
-    claimConfig = getClaimConfig();
+    claimConfig = await getClaimConfig();
   } catch (configError) {
     console.error("Claim config error:", configError.message);
+
+    if (configError.message === "Admin wallet address is not configured.") {
+      const error = new Error("Admin wallet address is not configured.");
+      error.statusCode = configError.statusCode || 500;
+      throw error;
+    }
+
     const error = new Error("Transaction verification failed.");
     error.statusCode = 500;
     throw error;

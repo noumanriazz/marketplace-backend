@@ -2,7 +2,8 @@ const mongoose = require("mongoose");
 const { isHash } = require("viem");
 const MiningMachine = require("../models/MiningMachine");
 const MiningOrder = require("../models/MiningOrder");
-const { verifyUsdtTransfer, getClaimConfig } = require("./blockchain");
+const { verifyUsdtTransfer, getUsdtContractAddress, getConfiguredChainId } = require("./blockchain");
+const { getStoredAdminWalletAddress } = require("./settings");
 
 /**
  * Maps a MiningOrder document to the API response shape.
@@ -95,10 +96,10 @@ const purchaseMiningMachine = async (user, machineId, txHash) => {
     throw error;
   }
 
-  let paymentConfig;
+  let adminWalletAddress;
 
   try {
-    paymentConfig = getClaimConfig();
+    adminWalletAddress = await getStoredAdminWalletAddress();
   } catch (configError) {
     console.error("Mining payment config error:", configError.message);
     const error = new Error("Transaction verification failed.");
@@ -109,7 +110,7 @@ const purchaseMiningMachine = async (user, machineId, txHash) => {
   const verification = await verifyUsdtTransfer({
     txHash: normalizedTxHash,
     expectedFrom: user.walletAddress,
-    expectedTo: paymentConfig.adminWalletAddress,
+    expectedTo: adminWalletAddress,
     expectedAmount: machine.priceUsdt,
   });
 
@@ -155,9 +156,18 @@ const purchaseMiningMachine = async (user, machineId, txHash) => {
 
 /**
  * Returns payment config for the frontend wallet transfer.
- * @returns {{ adminWalletAddress: string, usdtContractAddress: string, chainId: number }}
+ * Admin wallet comes from MongoDB Settings.
+ * @returns {Promise<{ adminWalletAddress: string, usdtContractAddress: string, chainId: number }>}
  */
-const getMiningPaymentConfig = () => getClaimConfig();
+const getMiningPaymentConfig = async () => {
+  const adminWalletAddress = await getStoredAdminWalletAddress();
+
+  return {
+    adminWalletAddress,
+    usdtContractAddress: getUsdtContractAddress(),
+    chainId: getConfiguredChainId(),
+  };
+};
 
 module.exports = {
   purchaseMiningMachine,

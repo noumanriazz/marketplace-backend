@@ -11,7 +11,7 @@ const getActivityReward = async (req, res) => {
     let claimConfig = null;
 
     try {
-      claimConfig = getClaimConfig();
+      claimConfig = await getClaimConfig();
     } catch (configError) {
       console.error("Claim config error:", configError.message);
     }
