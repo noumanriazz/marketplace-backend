@@ -46,8 +46,6 @@ const activityRewardSchema = new mongoose.Schema(
       default: null,
       trim: true,
       lowercase: true,
-      sparse: true,
-      unique: true,
     },
     claimedAt: {
       type: Date,
@@ -56,6 +54,18 @@ const activityRewardSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    autoIndex: false,
+  }
+);
+
+activityRewardSchema.index(
+  { txHash: 1 },
+  {
+    unique: true,
+    name: "txHash_1",
+    partialFilterExpression: {
+      txHash: { $type: "string" },
+    },
   }
 );
 

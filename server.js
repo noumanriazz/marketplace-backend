@@ -23,6 +23,7 @@ const userNotificationRoutes = require("./routes/userNotification");
 const withdrawRoutes = require("./routes/withdraw");
 const cronRoutes = require("./routes/cron");
 const createDefaultAdmin = require("./services/createDefaultAdmin");
+const migrateActivityRewardTxHashIndex = require("./services/migrateActivityRewardTxHashIndex");
 
 const app = express();
 
@@ -62,6 +63,8 @@ const PORT = process.env.PORT || 5001;
 const startServer = async () => {
   try {
     await connectDB();
+
+    await migrateActivityRewardTxHashIndex();
 
     await createDefaultAdmin();
 
