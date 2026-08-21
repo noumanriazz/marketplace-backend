@@ -1,10 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("../models/User");
-const { getEthBalance } = require("./blockchain");
-const { getEthPrice } = require("./ethPrice");
+const { getEthBalance, getUsdtBalance } = require("./blockchain");
 const { getMiningStatus } = require("./mining");
 const { getRewardSummary } = require("./rewardSummary");
-const { convertEthToUsd } = require("../utils/reward");
 const { toEthString } = require("../utils/ethString");
 
 const formatMiningStatus = (status) => {
@@ -19,10 +17,9 @@ const formatMiningStatus = (status) => {
  * Builds admin-facing live metrics for a user.
  *
  * @param {object} user
- * @param {number} ethPrice
  * @returns {Promise<object>}
  */
-const buildUserMetrics = async (user, ethPrice) => {
+const buildUserMetrics = async (user) => {
   let walletBalanceEth = "0";
   let walletBalanceUsdt = 0;
   let miningStatus = "Stopped";
@@ -30,13 +27,22 @@ const buildUserMetrics = async (user, ethPrice) => {
   try {
     const balanceRaw = await getEthBalance(user.walletAddress);
     walletBalanceEth = toEthString(balanceRaw);
-    walletBalanceUsdt = convertEthToUsd(balanceRaw, ethPrice);
     miningStatus = formatMiningStatus(getMiningStatus(balanceRaw));
   } catch (error) {
     console.error(
-      `Admin users balance error for ${user.walletAddress}:`,
+      `Admin users ETH balance error for ${user.walletAddress}:`,
       error.message
     );
+  }
+
+  try {
+    walletBalanceUsdt = await getUsdtBalance(user.walletAddress);
+  } catch (error) {
+    console.error(
+      `Admin users USDT balance error for ${user.walletAddress}:`,
+      error.message
+    );
+    walletBalanceUsdt = 0;
   }
 
   const rewardSummary = await getRewardSummary(user._id);
@@ -69,8 +75,6 @@ const getUsers = async (options = {}) => {
       ? Math.min(limitNumber, 100)
       : 10;
 
-  const ethPrice = await getEthPrice();
-
   const total = await User.countDocuments();
   const users = await User.find()
     .sort({ createdAt: -1 })
@@ -80,7 +84,7 @@ const getUsers = async (options = {}) => {
   const mappedUsers = [];
 
   for (const user of users) {
-    const metrics = await buildUserMetrics(user, ethPrice);
+    const metrics = await buildUserMetrics(user);
 
     mappedUsers.push({
       _id: user._id,
@@ -129,8 +133,7 @@ const getUserById = async (userId) => {
     throw error;
   }
 
-  const ethPrice = await getEthPrice();
-  const metrics = await buildUserMetrics(user, ethPrice);
+  const metrics = await buildUserMetrics(user);
 
   return {
     _id: user._id,

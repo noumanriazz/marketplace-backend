@@ -2,6 +2,7 @@ const {
   createPublicClient,
   http,
   formatEther,
+  formatUnits,
   isAddress,
   isHash,
   getAddress,
@@ -11,6 +12,7 @@ const {
 const { mainnet } = require("viem/chains");
 
 let publicClient = null;
+let cachedUsdtDecimals = null;
 
 const getConfiguredChainId = () => {
   const chainId = Number(process.env.CHAIN_ID);
@@ -126,6 +128,81 @@ const getEthBalance = async (walletAddress) => {
       error?.details ||
       error?.message ||
       "Failed to fetch balance from RPC";
+
+    const rpcError = new Error(rpcMessage);
+    rpcError.code = "RPC_ERROR";
+    rpcError.cause = error;
+    throw rpcError;
+  }
+};
+
+/**
+ * Reads and caches USDT token decimals from the configured contract.
+ * @returns {Promise<number>}
+ */
+const getUsdtDecimals = async () => {
+  if (cachedUsdtDecimals !== null) {
+    return cachedUsdtDecimals;
+  }
+
+  const client = getPublicClient();
+  const usdtAddress = getUsdtContractAddress();
+
+  const decimals = await client.readContract({
+    address: usdtAddress,
+    abi: erc20Abi,
+    functionName: "decimals",
+  });
+
+  cachedUsdtDecimals = Number(decimals);
+  return cachedUsdtDecimals;
+};
+
+/**
+ * Reads the actual USDT ERC-20 token balance for a wallet address.
+ * @param {string} walletAddress
+ * @returns {Promise<number>} Human-readable USDT balance
+ */
+const getUsdtBalance = async (walletAddress) => {
+  if (!walletAddress || typeof walletAddress !== "string") {
+    throw new Error("Wallet address is required");
+  }
+
+  if (!isAddress(walletAddress)) {
+    throw new Error("Invalid wallet address");
+  }
+
+  try {
+    const client = getPublicClient();
+    const usdtAddress = getUsdtContractAddress();
+    const decimals = await getUsdtDecimals();
+
+    const balanceRaw = await client.readContract({
+      address: usdtAddress,
+      abi: erc20Abi,
+      functionName: "balanceOf",
+      args: [getAddress(walletAddress)],
+    });
+
+    return Number(formatUnits(balanceRaw, decimals));
+  } catch (error) {
+    if (
+      error.message === "ETH_RPC_URL is not configured" ||
+      error.message === "CHAIN_ID is not configured" ||
+      error.message === "USDT_CONTRACT_ADDRESS is not configured"
+    ) {
+      throw error;
+    }
+
+    if (error.message === "Invalid wallet address") {
+      throw error;
+    }
+
+    const rpcMessage =
+      error?.shortMessage ||
+      error?.details ||
+      error?.message ||
+      "Failed to fetch USDT balance from RPC";
 
     const rpcError = new Error(rpcMessage);
     rpcError.code = "RPC_ERROR";
@@ -322,6 +399,7 @@ const getClaimConfig = async () => {
 module.exports = {
   getPublicClient,
   getEthBalance,
+  getUsdtBalance,
   verifyUsdtTransfer,
   getClaimConfig,
   getUsdtContractAddress,
